@@ -6,11 +6,46 @@ body {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   display: flex;
+  flex-direction: column;
   height: 100vh;
 }
 
+/* Top bar */
+
+#topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #20232a;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+#topbar .title {
+  font-weight: 600;
+}
+
+#topbar .controls label {
+  font-size: 13px;
+}
+
+#topbar select {
+  margin-left: 4px;
+  padding: 2px 4px;
+  font-size: 13px;
+}
+
+/* Main content area */
+
+#content {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
 #left {
-  width: 30%;
+  width: 32%;
   border-right: 1px solid #ccc;
   padding: 8px;
   overflow-y: auto;
@@ -21,21 +56,39 @@ body {
   padding: 8px;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
-#flows-list {
+h3 {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+#flows-list,
+#history-list {
   font-size: 13px;
+  margin-bottom: 8px;
 }
 
-.flow-item {
+.flow-item,
+.history-item {
   padding: 4px;
   border-bottom: 1px solid #eee;
   cursor: pointer;
 }
 
-.flow-item:hover {
+.flow-item:hover,
+.history-item:hover {
   background: #f3f3f3;
 }
+
+.history-item span.status {
+  font-size: 11px;
+  padding-left: 4px;
+  color: #666;
+}
+
+/* Details pane */
 
 label {
   display: block;

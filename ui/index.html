@@ -6,15 +6,32 @@
     <link rel="stylesheet" href="/main.css" />
   </head>
   <body>
-    <div id="left">
-      <h3>Pending Flows</h3>
-      <div id="flows-list"></div>
-    </div>
-    <div id="right">
-      <div id="details">
-        <p>Select a flow on the left.</p>
+    <div id="topbar">
+      <div class="title">Pentest Proxy</div>
+      <div class="controls">
+        <label>
+          Intercept:
+          <select id="intercept-toggle">
+            <option value="on">on</option>
+            <option value="off">off</option>
+          </select>
+        </label>
       </div>
-      <div id="actions"></div>
+    </div>
+
+    <div id="content">
+      <div id="left">
+        <h3>Pending Flows</h3>
+        <div id="flows-list"></div>
+        <h3>History</h3>
+        <div id="history-list"></div>
+      </div>
+      <div id="right">
+        <div id="details">
+          <p>Select a flow or history item on the left.</p>
+        </div>
+        <div id="actions"></div>
+      </div>
     </div>
 
     <script src="/main.js"></script>

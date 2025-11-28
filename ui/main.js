@@ -1,4 +1,6 @@
-let currentId = null;
+let currentId = null;       // current pending flow id
+let currentHistoryId = null; // current history id
+let historyCache = {};      // id -> entry
 
 async function fetchFlows() {
   try {
@@ -19,14 +21,59 @@ async function fetchFlows() {
   }
 }
 
+async function fetchHistory() {
+  try {
+    const res = await fetch("/api/history");
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = document.getElementById("history-list");
+    list.innerHTML = "";
+    historyCache = {};
+
+    data.forEach((h) => {
+      historyCache[h.id] = h;
+      const div = document.createElement("div");
+      div.className = "history-item";
+
+      const url = h.scheme + "://" + h.host + (h.path || "");
+      const status = h.status_code != null ? h.status_code : "-";
+      const action = h.action || "";
+
+      div.innerHTML =
+        "#" +
+        h.id +
+        " " +
+        h.method +
+        " " +
+        url +
+        ' <span class="status">[' +
+        action +
+        " " +
+        status +
+        "]</span>";
+
+      div.onclick = () => loadHistory(h.id);
+      list.appendChild(div);
+    });
+  } catch (e) {
+    console.error("fetchHistory error", e);
+  }
+}
+
 async function loadFlow(id) {
   currentId = id;
+  currentHistoryId = null;
+
   const res = await fetch("/api/flows/" + id);
   if (!res.ok) {
     alert("Flow " + id + " not found or already decided.");
     return;
   }
   const f = await res.json();
+  renderPendingDetails(f);
+}
+
+function renderPendingDetails(f) {
   const details = document.getElementById("details");
   const actions = document.getElementById("actions");
 
@@ -35,7 +82,7 @@ async function loadFlow(id) {
 
   const html = [];
 
-  html.push('<div class="small">Client: ' + f.client + "</div>");
+  html.push('<div class="small">PENDING | Client: ' + escapeHtml(f.client) + "</div>");
   html.push("<label>Method</label>");
   html.push(
     '<input type="text" id="method" value="' + escapeHtml(f.method) + '">'
@@ -78,6 +125,63 @@ async function loadFlow(id) {
   actions.appendChild(btnBlock);
 }
 
+function loadHistory(id) {
+  currentId = null;
+  currentHistoryId = id;
+
+  const h = historyCache[id];
+  if (!h) return;
+
+  const details = document.getElementById("details");
+  const actions = document.getElementById("actions");
+
+  details.innerHTML = "";
+  actions.innerHTML = "";
+
+  const html = [];
+
+  const url = h.scheme + "://" + h.host + (h.path || "");
+  const status = h.status_code != null ? h.status_code : "-";
+  const action = h.action || "";
+
+  html.push(
+    '<div class="small">HISTORY | Action: ' +
+      escapeHtml(action) +
+      " | Status: " +
+      escapeHtml(String(status)) +
+      " | Client: " +
+      escapeHtml(h.client) +
+      "</div>"
+  );
+
+  html.push("<label>Method</label>");
+  html.push(
+    '<input type="text" value="' +
+      escapeHtml(h.method) +
+      '" disabled readonly>'
+  );
+
+  html.push("<label>URL</label>");
+  html.push('<input type="text" value="' + escapeHtml(url) + '" disabled readonly>');
+
+  html.push("<label>Headers</label>");
+  html.push(
+    '<textarea disabled readonly>' +
+      escapeHtml(h.headers || "") +
+      "</textarea>"
+  );
+
+  html.push("<label>Body</label>");
+  html.push(
+    '<textarea disabled readonly>' +
+      escapeHtml(h.body || "") +
+      "</textarea>"
+  );
+
+  details.innerHTML = html.join("\n");
+  actions.innerHTML = "";
+}
+
 async function sendDecision(action) {
   if (currentId === null) return;
 
@@ -106,7 +210,50 @@ async function sendDecision(action) {
     ).innerHTML = `<p>Decision sent for #${currentId}.</p>`;
     currentId = null;
     fetchFlows();
+    fetchHistory();
   }
+}
+
+/* Intercept toggle */
+
+async function fetchSettings() {
+  try {
+    const res = await fetch("/api/settings");
+    if (!res.ok) return;
+    const data = await res.json();
+    const select = document.getElementById("intercept-toggle");
+    if (!select) return;
+    select.value = data.intercept ? "on" : "off";
+  } catch (e) {
+    console.error("fetchSettings error", e);
+  }
+}
+
+async function setIntercept(on) {
+  try {
+    const res = await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ intercept: on }),
+    });
+    if (!res.ok) {
+      console.error("setIntercept failed");
+    }
+  } catch (e) {
+    console.error("setIntercept error", e);
+  }
+}
+
+function setupInterceptToggle() {
+  const select = document.getElementById("intercept-toggle");
+  if (!select) return;
+
+  select.addEventListener("change", () => {
+    const on = select.value === "on";
+    setIntercept(on);
+  });
+
+  fetchSettings();
 }
 
 function escapeHtml(str) {
@@ -117,6 +264,10 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
-// Periodically refresh flow list
+/* Init */
+
+setupInterceptToggle();
 setInterval(fetchFlows, 1000);
+setInterval(fetchHistory, 2000);
 fetchFlows();
+fetchHistory();
